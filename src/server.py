@@ -16,7 +16,7 @@ def socket_listen(server):
 
 
 def server_read(conn):
-    buffer_length = 1024
+    buffer_length = 16
     message_complete = False
     echo_message = ""
 
@@ -29,7 +29,7 @@ def server_read(conn):
     return echo_message
 
 
-def start_socket()
+def start_socket():
     this_server = make_socket()
     conn, addr = socket_listen(this_server)
     echo_message = server_read(conn)
