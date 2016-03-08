@@ -12,7 +12,7 @@ def client(message):
 
     client_socket.sendall(message.encode('utf8'))
 
-    buffer_length = 1024
+    buffer_length = 16
     echo_complete = False
     while not echo_complete:
         part = client_socket.recv(buffer_length)
