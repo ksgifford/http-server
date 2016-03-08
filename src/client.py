@@ -1,10 +1,11 @@
+"""Module to create a client and send messages to an echo server."""
 # -*- coding: utf-8 -*-
 import sys
 import socket
-# from server import server
 
 
 def client(message):
+    """Pull socket information from server address and build message."""
     infos = socket.getaddrinfo('127.0.0.1', 5000)
     stream_info = [i for i in infos if i[1] == socket.SOCK_STREAM][0]
     client_socket = socket.socket(*stream_info[:3])
@@ -12,6 +13,7 @@ def client(message):
     client_socket.connect(stream_info[-1])
 
     client_socket.sendall(message.encode('utf8'))
+    client_socket.shutdown(socket.SHUT_WR)
 
     buffer_msg = ''
     buffer_length = 16
@@ -24,8 +26,8 @@ def client(message):
     print(buffer_msg)
 
     client_socket.close()
+    return buffer_msg
 
 
 if __name__ == "__main__":
-    # server()
     client(str(sys.argv[1]))
