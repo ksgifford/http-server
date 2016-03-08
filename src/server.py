@@ -9,28 +9,28 @@ def make_socket():
     return server
 
 
-def socket_listen():
+def socket_listen(server):
     server.listen(1)
     conn, addr = server.accept()
     return conn, addr
 
 
-def server_read():
+def server_read(conn):
     buffer_length = 1024
     message_complete = False
     echo_message = ""
 
     while not message_complete:
-    part = conn.recv(buffer_length)
-    echo_message += part
-    if len(part) < buffer_length:
-        break
+        part = conn.recv(buffer_length)
+        echo_message += part
+        if len(part) < buffer_length:
+            break
 
     return echo_message
 
 
 def start_socket()
-    server = make_socket()
-    conn, addr = socket_listen()
-    echo_message = server_read()
+    this_server = make_socket()
+    conn, addr = socket_listen(this_server)
+    echo_message = server_read(conn)
     conn.sendall(echo_message.encode('utf-8'))
