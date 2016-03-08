@@ -20,6 +20,11 @@ lib64/
 parts/
 sdist/
 var/
+bin/
+include/
+share/
+pip-selfcheck.json
+tox.ini
 *.egg-info/
 .installed.cfg
 *.egg
