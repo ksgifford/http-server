@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 import sys
 import socket
-from server import server
+# from server import server
 
 
 def client(message):
@@ -21,11 +21,11 @@ def client(message):
         buffer_msg += part.decode('utf8')
         if len(part) < buffer_length:
             break
-        print(buffer_msg)
+    print(buffer_msg)
 
     client_socket.close()
 
 
 if __name__ == "__main__":
-    server()
+    # server()
     client(str(sys.argv[1]))
