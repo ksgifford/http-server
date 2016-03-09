@@ -4,19 +4,29 @@ import socket
 
 
 def response_ok():
-    blank_line = "<CRLF>"
     status = {
-        "protocol": "HTTP/1.1",
-        "status_code": "200 OK"
+        "protocol": "HTTP/1.1 ",
+        "code": "200 OK"
     }
 
     headers = {
         "Content-Type": "text/plain"
     }
 
+    blank_line = "<CRLF>\n"
+
     body = "Some silly text"
 
-    return "{} {}\n{}: {}\n{}\n{}".format(status["protocol"], status['status_code'], headers.keys()[0], headers.values()[0], blank_line, body)
+    response_list = [status["protocol"], status["code"] + "\n"]
+    for k, v in headers.items():
+        response_list.append(k + ": ")
+        response_list.append(v + "\n")
+    response_list.append(blank_line)
+    response_list.append(body)
+
+    response_string = "{}" * len(response_list)
+
+    return response_string.format(*response_list)
 
 
 def response_error():
