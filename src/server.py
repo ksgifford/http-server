@@ -54,15 +54,15 @@ def server_read(conn):
     """Read incoming client message and create echo message to client."""
     buffer_length = 16
     message_complete = False
-    message = ""
+    message = []
 
     while not message_complete:
         part = conn.recv(buffer_length)
-        message += part.decode('utf8')
+        message.append(part)
         if len(part) < buffer_length:
             break
 
-    return message
+    return b"".join(message)
 
 
 def server():
@@ -73,7 +73,7 @@ def server():
         while True:
             conn, addr = this_server.accept()
             message = server_read(conn)
-            print(message)
+            print(message.decode('utf-8'))
             response = response_ok()
             print(response)
             conn.sendall(response.encode('utf-8'))
