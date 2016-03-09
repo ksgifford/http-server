@@ -3,6 +3,26 @@
 import socket
 
 
+def response_ok():
+    blank_line = "<CRLF>"
+    status = {
+        "protocol": "HTTP/1.1",
+        "status_code": "200 OK"
+    }
+
+    headers = {
+        "Content-Type": "text/plain"
+    }
+
+    body = "Some silly text"
+
+    return "{} {}\n{}: {}\n{}\n{}".format(status["protocol"], status['status_code'], headers.keys()[0], headers.values()[0], blank_line, body)
+
+
+def response_error():
+    pass
+
+
 def make_socket():
     """Build a socket for the server, set attributes, and bind address."""
     server = socket.socket(socket.AF_INET, socket.SOCK_STREAM, socket.IPPROTO_TCP)
@@ -42,7 +62,9 @@ def server():
             conn, addr = socket_listen(this_server)
             echo_message = server_read(conn)
             print(echo_message)
-            conn.sendall(echo_message.encode('utf-8'))
+            response = response_ok()
+            print(response)
+            conn.sendall(response.encode('utf-8'))
             conn.close()
 
     except KeyboardInterrupt:

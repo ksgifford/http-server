@@ -18,3 +18,12 @@ def test_server(client_msg, server_reply):
     from client import client
 
     assert client(client_msg) == server_reply
+
+
+def test_response_ok():
+    assert response_ok() ==
+
+
+def test_response_error():
+    assert response_error() ==
+
