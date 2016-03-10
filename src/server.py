@@ -1,6 +1,53 @@
-"""Module to create a simple echo server."""
+"""Module to create a simple http server."""
 # -*- coding: utf-8 -*-
 import socket
+
+
+class Response(object):
+    """Create Response Class."""
+
+    def __init__(self, code, body, headers=None):
+        """Init Response with Status code."""
+        self.protocol = "HTTP/1.1"
+        self.code = code
+        self.status = [self.protocol + " ", code + "\r\n"]
+        self.body = body
+        if headers:
+            self.headers = headers
+
+    def return_response_string(self):
+        """Return this Response Instances's response string."""
+        blank_line = "\r\n"
+
+        response_list = self.status
+
+        try:
+            for k, v in self.headers.items():
+                response_list.append(k + ": ")
+                response_list.append(v + "\r\n")
+        except AttributeError:
+            pass
+
+        response_list.append(blank_line)
+        response_list.append(self.body)
+
+        response_string = "{}" * len(response_list)
+
+        return response_string.format(*response_list)
+
+
+def response_ok():
+    """Return Status 200 response with body and headers."""
+    headers = {"Content-Type": "text/plain"}
+    body = "This is some text -- body text"
+    response = Response("200 OK", body=body, headers=headers)
+    return response, response.return_response_string()
+
+
+def response_error():
+    """Return Error Response."""
+    response = Response("500 INTERNAL SERVER ERROR", "Oops!")
+    return response, response.return_response_string()
 
 
 def make_socket():
@@ -8,45 +55,48 @@ def make_socket():
     server = socket.socket(socket.AF_INET, socket.SOCK_STREAM, socket.IPPROTO_TCP)
     address = ('127.0.0.1', 5000)
     server.bind(address)
-    return server
-
-
-def socket_listen(server):
-    """Listen for a client and accept connection."""
     server.listen(1)
-    conn, addr = server.accept()
-    return conn, addr
+    return server
 
 
 def server_read(conn):
     """Read incoming client message and create echo message to client."""
     buffer_length = 16
     message_complete = False
-    echo_message = ""
+    message = []
 
     while not message_complete:
         part = conn.recv(buffer_length)
-        echo_message += part.decode('utf8')
+        message.append(part)
         if len(part) < buffer_length:
             break
 
-    return echo_message
+    return b"".join(message)
 
 
 def server():
     """Master function to initialize server and call component functions."""
+    this_server = make_socket()
     try:
-        this_server = make_socket()
         print('socket open')
         while True:
-            conn, addr = socket_listen(this_server)
-            echo_message = server_read(conn)
-            print(echo_message)
-            conn.sendall(echo_message.encode('utf-8'))
+            conn, addr = this_server.accept()
+            message = server_read(conn)
+            print(message.decode('utf-8'))
+            response, response_msg = response_ok()
+            print(response_msg)
+            conn.sendall(response_msg.encode('utf-8'))
             conn.close()
 
     except KeyboardInterrupt:
-        print('connection closing')
-        conn.close()
+        try:
+            conn.close()
+        except NameError:
+            pass
+
+    finally:
         print('Socket closing')
         this_server.close()
+
+if __name__ == "__main__":
+    server()
