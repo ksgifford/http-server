@@ -6,12 +6,13 @@ import socket
 class Response(object):
     """Create Response Class."""
 
-    def __init__(self, code, body, headers=None):
+    def __init__(self, code, reason_phrase, body=None, headers=None):
         """Init Response with Status code."""
         self.protocol = "HTTP/1.1"
-        self.code = code
+        self.code = code + " " + reason_phrase
         self.status = [self.protocol + " ", code + "\r\n"]
-        self.body = body
+        if body:
+            self.body = body
         if headers:
             self.headers = headers
 
@@ -28,8 +29,11 @@ class Response(object):
         except AttributeError:
             pass
 
-        response_list.append(blank_line)
-        response_list.append(self.body)
+        try:
+            response_list.append(blank_line)
+            response_list.append(self.body)
+        except AttributeError:
+            pass
 
         response_string = "{}" * len(response_list)
 
@@ -40,14 +44,14 @@ def response_ok():
     """Return Status 200 response with body and headers."""
     headers = {"Content-Type": "text/plain"}
     body = "This is some text -- body text"
-    response = Response("200 OK", body=body, headers=headers)
-    return response, response.return_response_string()
+    response = Response("200", "OK", body=body, headers=headers)
+    return response.return_response_string()
 
 
-def response_error():
+def response_error(code, reason_phrase):
     """Return Error Response."""
-    response = Response("500 INTERNAL SERVER ERROR", "Oops!")
-    return response, response.return_response_string()
+    response = Response(code, reason_phrase)
+    return response.return_response_string()
 
 
 def make_socket():
@@ -80,28 +84,16 @@ def parse_request(request):
     method = request_split[0]
     uri = request_split[1]
     protocol = request_split[2]
-    host = request_split[3]
+    headers = request_split[3:]
 
-    try:
-        if method != "GET":
-            raise TypeError("Specified method is not allowed.")
-        elif protocol != "HTTP/1.1":
-            raise ValueError("Specified protocol is not supported.")
-        elif host != "Host:":
-            raise AttributeError("Request does not have proper headers.")
-        else:
-            valid_response = Response("200 OK", uri)
-            print(uri)
-            return valid_response, valid_response.return_response_string()
-    except TypeError:
-        type_error_response = Response("405 METHOD NOT ALLOWED", "Method not allowed.")
-        return type_error_response, type_error_response.return_response_string()
-    except ValueError:
-        value_error_response = Response("505 HTTP VERSION NOT SUPPORTED", "Please use HTTP/1.1")
-        return value_error_response, value_error_response.return_response_string()
-    except AttributeError:
-        attr_error_response = Response("400 BAD REQUEST", "Wrong protocol.")
-        return attr_error_response, attr_error_response.return_response_string()
+    if method != "GET":
+        raise TypeError("Specified method is not allowed.")
+    elif protocol != "HTTP/1.1":
+        raise ValueError("Specified protocol is not supported.")
+    elif "Host:" not in headers:
+        raise AttributeError("Request does not have proper headers.")
+    else:
+        return uri
 
 
 def server():
@@ -112,8 +104,15 @@ def server():
         while True:
             conn, addr = this_server.accept()
             message = server_read(conn)
-            print(message.decode('utf-8'))
-            response, response_msg = parse_request(message.decode('utf-8'))
+            try:
+                uri = parse_request(message.decode('utf-8'))
+                response_msg = response_ok()
+            except TypeError:
+                response_msg = response_error("405", "Method Not Allowed")
+            except ValueError:
+                response_msg = response_error("505", "HTTP Version Not Supported")
+            except AttributeError:
+                response_msg = response_error("400", "Bad Request")
             print(response_msg)
             conn.sendall(response_msg.encode('utf-8'))
             conn.close()
