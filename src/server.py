@@ -16,7 +16,7 @@ class Response(object):
 
     def return_response_string(self):
         """Return this Response Instances's response string."""
-        blank_line = "\r\n\r\n"
+        blank_line = "\r\n"
 
         response_list = self.status
 
@@ -73,8 +73,8 @@ def server_read(conn):
 
 def server():
     """Master function to initialize server and call component functions."""
+    this_server = make_socket()
     try:
-        this_server = make_socket()
         print('socket open')
         while True:
             conn, addr = this_server.accept()
