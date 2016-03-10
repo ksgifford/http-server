@@ -55,3 +55,23 @@ def test_response_break():
 
     assert len(good_split) == 2
     assert len(bad_split) == 2
+
+
+def test_parser():
+    """Test the parser function."""
+    from server import parse_request
+    request_str = b"""
+    GET /favicon.ico HTTP/1.1\r\n
+    Host: 111.1.1.1:4000\r\n
+    """
+
+    request_split = request_str.split()
+    method = request_split[0]
+    uri = request_split[1]
+    protocol = request_split[2]
+    host = request_split[3]
+
+    assert method == b"GET"
+    assert uri == b"/favicon.ico"
+    assert protocol == b"HTTP/1.1"
+    assert host == b"Host:"

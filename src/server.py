@@ -74,6 +74,36 @@ def server_read(conn):
     return b"".join(message)
 
 
+def parse_request(request):
+    """Parse incoming request into its components for evaluation."""
+    request_split = request.split()
+    method = request_split[0]
+    uri = request_split[1]
+    protocol = request_split[2]
+    host = request_split[3]
+
+    try:
+        if method != "GET":
+            raise TypeError("Specified method is not allowed.")
+        elif protocol != "HTTP/1.1":
+            raise ValueError("Specified protocol is not supported.")
+        elif host != "Host:":
+            raise AttributeError("Request does not have proper headers.")
+        else:
+            valid_response = Response("200 OK", uri)
+            print(uri)
+            return valid_response, valid_response.return_response_string()
+    except TypeError:
+        type_error_response = Response("405 METHOD NOT ALLOWED", "Method not allowed.")
+        return type_error_response, type_error_response.return_response_string()
+    except ValueError:
+        value_error_response = Response("505 HTTP VERSION NOT SUPPORTED", "Please use HTTP/1.1")
+        return value_error_response, value_error_response.return_response_string()
+    except AttributeError:
+        attr_error_response = Response("400 BAD REQUEST", "Wrong protocol.")
+        return attr_error_response, attr_error_response.return_response_string()
+
+
 def server():
     """Master function to initialize server and call component functions."""
     this_server = make_socket()
@@ -83,7 +113,7 @@ def server():
             conn, addr = this_server.accept()
             message = server_read(conn)
             print(message.decode('utf-8'))
-            response, response_msg = response_ok()
+            response, response_msg = parse_request(message.decode('utf-8'))
             print(response_msg)
             conn.sendall(response_msg.encode('utf-8'))
             conn.close()
