@@ -1,4 +1,4 @@
-"""Module to create a simple echo server."""
+"""Module to create a simple http server."""
 # -*- coding: utf-8 -*-
 import socket
 
@@ -6,22 +6,25 @@ import socket
 class Response(object):
     """Create Response Class."""
 
-    def __init__(self, code, headers=None):
+    def __init__(self, code, headers=None, body=None):
         """Init Response with Status code."""
         self.protocol = "HTTP/1.1 "
         self.code = code
         self.status = [self.protocol, code + "\n"]
-        self.headers = headers
-        self.body = "This is some text -- body text"
+        if headers: self.headers = headers
+        self.body = body
 
     def return_response_string(self):
         """Return this Response Instances's response string."""
-        blank_line = "<CRLF>\n"
+        blank_line = "\r\n\r\n"
 
         response_list = self.status
-        for k, v in self.headers.items():
-            response_list.append(k + ": ")
-            response_list.append(v + "\n")
+
+        if self.headers:
+            for k, v in self.headers.items():
+                response_list.append(k + ": ")
+                response_list.append(v + "\r\n")
+
         response_list.append(blank_line)
         response_list.append(self.body)
 
@@ -31,12 +34,15 @@ class Response(object):
 
 
 def response_ok():
+    """Return Status 200 response with body and headers."""
     headers = {"Content-Type": "text/plain"}
-    response = Response("200 OK", headers=headers)
+    body = "This is some text -- body text"
+    response = Response("200 OK", headers=headers, body=body)
     return response.return_response_string()
 
 
 def response_error():
+    """Return Error Response."""
     response = Response("500 INTERNAL SERVER ERROR")
     return response.return_response_string()
 
@@ -88,3 +94,6 @@ def server():
     finally:
         print('Socket closing')
         this_server.close()
+
+if __name__ == "__main__":
+    server()
