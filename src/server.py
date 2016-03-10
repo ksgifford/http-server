@@ -6,13 +6,14 @@ import socket
 class Response(object):
     """Create Response Class."""
 
-    def __init__(self, code, headers=None, body=None):
+    def __init__(self, code, body, headers=None):
         """Init Response with Status code."""
-        self.protocol = "HTTP/1.1 "
+        self.protocol = "HTTP/1.1"
         self.code = code
-        self.status = [self.protocol, code + "\n"]
-        if headers: self.headers = headers
+        self.status = [self.protocol + " ", code + "\r\n"]
         self.body = body
+        if headers:
+            self.headers = headers
 
     def return_response_string(self):
         """Return this Response Instances's response string."""
@@ -20,10 +21,12 @@ class Response(object):
 
         response_list = self.status
 
-        if self.headers:
+        try:
             for k, v in self.headers.items():
                 response_list.append(k + ": ")
                 response_list.append(v + "\r\n")
+        except AttributeError:
+            pass
 
         response_list.append(blank_line)
         response_list.append(self.body)
@@ -37,14 +40,14 @@ def response_ok():
     """Return Status 200 response with body and headers."""
     headers = {"Content-Type": "text/plain"}
     body = "This is some text -- body text"
-    response = Response("200 OK", headers=headers, body=body)
-    return response.return_response_string()
+    response = Response("200 OK", body=body, headers=headers)
+    return response, response.return_response_string()
 
 
 def response_error():
     """Return Error Response."""
-    response = Response("500 INTERNAL SERVER ERROR")
-    return response.return_response_string()
+    response = Response("500 INTERNAL SERVER ERROR", "Oops!")
+    return response, response.return_response_string()
 
 
 def make_socket():
@@ -80,9 +83,9 @@ def server():
             conn, addr = this_server.accept()
             message = server_read(conn)
             print(message.decode('utf-8'))
-            response = response_ok()
-            print(response)
-            conn.sendall(response.encode('utf-8'))
+            response, response_msg = response_ok()
+            print(response_msg)
+            conn.sendall(response_msg.encode('utf-8'))
             conn.close()
 
     except KeyboardInterrupt:

@@ -1,7 +1,5 @@
 """Tests to ensure that our server is properly echoing the client."""
-# NOTE: Server must be started manually before running Pytest.
 # _*_ coding: utf-8 _*_
-import pytest
 
 TEST_LST = [
     ('Test msg 1', 'Test msg 1'),
@@ -12,23 +10,48 @@ TEST_LST = [
 ]
 
 
-# @pytest.mark.parametrize('client_msg, server_reply', TEST_LST)
-# def test_server(client_msg, server_reply):
-#     """Test that server returns client message."""
-#     from client import client
+def test_response_status():
+    """Test responses for presence of status code and protocol."""
+    from server import response_ok
+    from server import response_error
+    good_resp_obj, good_resp_msg = response_ok()
+    bad_resp_obj, bad_resp_msg = response_error()
 
-#     assert client(client_msg) == server_reply
+    good_split = good_resp_msg.split(" ")
+    bad_split = bad_resp_msg.split(" ")
+
+    assert good_split[1][:1:] == "2"
+    assert bad_split[1][:1:] == "5"
+    assert good_split[0] == "HTTP/1.1"
+    assert good_split[0] == good_resp_obj.protocol
+    assert bad_split[0] == "HTTP/1.1"
+    assert bad_split[0] == bad_resp_obj.protocol
 
 
-def test_response_ok():
-    from server import server
-    response = response_ok()
-    split = response.split(" ")
-    assert split[2][:3:] == b"200"
+def test_response_headers():
+    """Test responses for proper headers."""
+    from server import response_ok
+    from server import response_error
+    good_resp_obj, good_resp_msg = response_ok()
+    bad_resp_obj, bad_resp_msg = response_error()
+
+    good_split = good_resp_msg.split("\r\n")
+    bad_split = bad_resp_msg.split("\r\n")
+
+    assert good_split[1][:7:] == "Content"
+    assert good_split[1][12] == ":"
+    assert bad_split[1] == ""
 
 
+def test_response_break():
+    """Test responses for blank break line between header and body."""
+    from server import response_ok
+    from server import response_error
+    good_resp_obj, good_resp_msg = response_ok()
+    bad_resp_obj, bad_resp_msg = response_error()
 
+    good_split = good_resp_msg.split("\r\n\r\n")
+    bad_split = bad_resp_msg.split("\r\n\r\n")
 
-def test_response_error():
-    assert response_error() ==
-
+    assert len(good_split) == 2
+    assert len(bad_split) == 2
