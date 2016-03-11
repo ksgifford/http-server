@@ -5,7 +5,7 @@ import io
 import os
 import mimetypes
 
-ADDRESS = ('127.0.0.1', 5000)
+ADDRESS = ("127.0.0.1", 5000)
 
 
 class RequestError(BaseException):
@@ -24,7 +24,7 @@ class Response(object):
         self.headers = headers
 
     def return_response_string(self):
-        """Return this Response Instances's response string."""
+        """Return this Response Instance's response string."""
         response = "{} {}\r\n".format(self.protocol, self.code)
         str_headers = ""
         if self.headers:
@@ -39,27 +39,34 @@ class Response(object):
 
 def resolve_uri(uri):
     homedir = os.getcwd()
-    webroot = 'webroot'
+    webroot = "webroot"
 
-    uri = uri.lstrip('/')
-    path = os.path.join(homedir, webroot, uri)
-    print('File Path: ' + path)
-    body = ""
+    uri = uri.lstrip("/")
+    print("URI: " + uri)
+    if not uri:
+        path = os.path.join(homedir, webroot)
+    else:
+        path = os.path.join(homedir, webroot, uri)
+    print("File Path: " + path)
+    body = "<!DOCTYPE html><html><body>"
 
-    mimetype = mimetypes.guess_type(path)
-    print (mimetype[0])
-    if not mimetype[0]:
+    mimetype = mimetypes.guess_type(path)[0]
+    if not mimetype:
+        mimetype = "text/html"
         for dir_name, sub_dir_list, file_list in os.walk(path):
-            body += 'Directory: {}'.format(dir_name.split('webroot')[-1])
+            body += "<h3>Directory: {}</h3>".format(dir_name.split("webroot")[-1])
+            body += "<ul>"
             for fname in file_list:
-                body += '\r\n\t {} '.format(fname)
+                body += "<li>{} </li>".format(fname)
+            body += "</ul>"
+        body += "</body></html>"
         print(body)
-        body.encode('utf-8')
+        body.encode("utf-8")
     else:
         f = io.open(path, "rb")
         body = f.read()
         f.close()
-    return (body, mimetype[0])
+    return (body, mimetype)
 
 
 def response_ok(body, content_type):
@@ -125,25 +132,26 @@ def server():
     """Master function to initialize server and call component functions."""
     this_server = make_socket()
     try:
-        print('socket open')
+        print("socket open")
         while True:
             conn, addr = this_server.accept()
             message = server_read(conn)
             response_msg = "TEST"
-            print(message)
-            try:
-                uri = parse_request(message.decode('utf-8'))
-                resolved_uri = resolve_uri(uri)
-                response_msg = response_ok(resolved_uri[0], resolved_uri[1])
-            except RequestError as ex:
-                response_msg = response_error(*ex.args)
-            except IOError:
-                response_msg = response_error(404, "File Not Found")
-            finally:
-                print(u"The requested URI is: " + uri)
-                print(response_msg)
-                conn.sendall(response_msg)
-                conn.close()
+            if message:
+                print(message)
+                try:
+                    uri = parse_request(message.decode("utf-8"))
+                    resolved_uri = resolve_uri(uri)
+                    response_msg = response_ok(resolved_uri[0], resolved_uri[1])
+                except RequestError as ex:
+                    response_msg = response_error(*ex.args)
+                except IOError:
+                    response_msg = response_error(404, "File Not Found")
+                finally:
+                    print(u"The requested URI is: " + uri)
+                    print(response_msg)
+                    conn.sendall(response_msg)
+                    conn.close()
 
     except KeyboardInterrupt:
         try:
@@ -152,7 +160,7 @@ def server():
             pass
 
     finally:
-        print('Socket closing')
+        print("Socket closing")
         this_server.close()
 
 if __name__ == "__main__":
