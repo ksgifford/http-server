@@ -77,8 +77,9 @@ def test_parser():
 
 
 def test_parse_req():
+    """Test parser for proper capture of URI."""
     from server import parse_request
-    request_str = b"""
+    request_str = """
     GET /favicon.ico HTTP/1.1\r\n
     Host: 111.1.1.1:4000\r\n
     """
@@ -87,43 +88,34 @@ def test_parse_req():
     assert parse_request(request_str) == uri
 
 
-def test_parse_req_2():
+def test_parse_req_method():
+    """Test that parser raises TypeError on improper request method."""
     from server import parse_request
-    request_str = b"""
+    request_str = """
     POST /favicon.ico HTTP/1.1\r\n
     Host: 111.1.1.1:4000\r\n
     """
     with pytest.raises(TypeError):
         parse_request(request_str)
 
-def test_parse_req_3():
+
+def test_parse_req_protocol():
+    """Test that parser raises ValueError on improper HTTP protocol."""
     from server import parse_request
-    request_str = b"""
+    request_str = """
     GET /favicon.ico HTTP/1.0\r\n
     Host: 111.1.1.1:4000\r\n
     """
     with pytest.raises(ValueError):
         parse_request(request_str)
 
-def test_parse_req_4():
+
+def test_parse_req_host():
+    """Test that parser raises AttributeError when Host header is missing."""
     from server import parse_request
-    request_str = b"""
+    request_str = """
     GET /favicon.ico HTTP/1.1\r\n
     Something\r\n
     """
     with pytest.raises(AttributeError):
         parse_request(request_str)
-
-
-
-
-
-
-
-
-
-
-
-
-
-

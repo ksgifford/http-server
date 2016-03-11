@@ -10,7 +10,7 @@ class Response(object):
         """Init Response with Status code."""
         self.protocol = "HTTP/1.1"
         self.code = code + " " + reason_phrase
-        self.status = [self.protocol + " ", code + "\r\n"]
+        self.status = [self.protocol + " " + self.code + "\r\n"]
         if body:
             self.body = body
         if headers:
@@ -104,6 +104,8 @@ def server():
         while True:
             conn, addr = this_server.accept()
             message = server_read(conn)
+            response_msg = "TEST"
+            print(message)
             try:
                 uri = parse_request(message.decode('utf-8'))
                 response_msg = response_ok()
@@ -113,9 +115,11 @@ def server():
                 response_msg = response_error("505", "HTTP Version Not Supported")
             except AttributeError:
                 response_msg = response_error("400", "Bad Request")
-            print(response_msg)
-            conn.sendall(response_msg.encode('utf-8'))
-            conn.close()
+            finally:
+                print(u"The requested URI is: " + uri)
+                print(response_msg.encode('utf-8'))
+                conn.sendall(response_msg.encode('utf-8'))
+                conn.close()
 
     except KeyboardInterrupt:
         try:
