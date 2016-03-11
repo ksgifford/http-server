@@ -19,28 +19,21 @@ class Response(object):
     def __init__(self, code, reason_phrase, body=None, headers=None):
         """Init Response with Status code."""
         self.protocol = "HTTP/1.1"
-        self.code = code + " " + reason_phrase
-        self.status = [self.protocol + " " + self.code + "\r\n"]
-        if body:
-            self.body = body
-        if headers:
-            self.headers = headers
+        self.code = "{} {}".format(code, reason_phrase)
+        self.body = body
+        self.headers = headers
 
     def return_response_string(self):
         """Return this Response Instances's response string."""
-        response_list = self.status
-        try:
+        response = "{} {}\r\n".format(self.protocol, self.code)
+        if self.headers:
+            str_headers = ""
             for k, v in self.headers.items():
-                response_list.extend([k,": ", v, "\r\n"])
-        except AttributeError:
-            pass
+                str_headers += "{}: {}\r\n".format(k, v)
 
-        response_list.append("\r\n")
-        encoded_response = "".join(map(str, response_list)).encode('utf-8')
-        try:
+        encoded_response = "{}{}\r\n".format(response, str_headers).encode("utf-8")
+        if self.body:
             encoded_response = encoded_response + self.body
-        except AttributeError:
-            pass
         return encoded_response
 
 
@@ -66,14 +59,14 @@ def response_ok(body, content_type):
         "Content-Length": len(body),
         "Content-Type": content_type,
     }
-    response = Response("200", "OK", body=body, headers=headers)
+    response = Response(200, "OK", body=body, headers=headers)
 
     return response.return_response_string()
 
 
 def response_error(code, reason_phrase):
     """Return Error Response."""
-    response = Response(str(code), reason_phrase)
+    response = Response(code, reason_phrase)
     return response.return_response_string()
 
 
