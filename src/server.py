@@ -5,6 +5,13 @@ import io
 import os
 import mimetypes
 
+ADDRESS = ('127.0.0.1', 5000)
+
+
+class RequestError(BaseException):
+    def __init__(self, code, reason):
+        super(RequestError, self).__init__(code, reason)
+
 
 class Response(object):
     """Create Response Class."""
@@ -12,38 +19,22 @@ class Response(object):
     def __init__(self, code, reason_phrase, body=None, headers=None):
         """Init Response with Status code."""
         self.protocol = "HTTP/1.1"
-        self.code = code + " " + reason_phrase
-        self.status = [self.protocol + " " + self.code + "\r\n"]
-        if body:
-            self.body = body
-        if headers:
-            self.headers = headers
+        self.code = "{} {}".format(code, reason_phrase)
+        self.body = body
+        self.headers = headers
 
     def return_response_string(self):
         """Return this Response Instances's response string."""
-        blank_line = "\r\n"
-
-        response_list = self.status
-
-        try:
+        response = "{} {}\r\n".format(self.protocol, self.code)
+        if self.headers:
+            str_headers = ""
             for k, v in self.headers.items():
-                response_list.append(k + ": ")
-                response_list.append(v + "\r\n")
-        except AttributeError:
-            pass
+                str_headers += "{}: {}\r\n".format(k, v)
 
-        try:
-            response_list.append(blank_line)
-            # response_list.append(self.body)
-        except AttributeError:
-            pass
-
-        response_string = "{}" * len(response_list)
-
-        new_response = response_string.format(*response_list)
-        new_response = new_response.encode('utf-8')
-        new_response = new_response + self.body
-        return new_response
+        encoded_response = "{}{}\r\n".format(response, str_headers).encode("utf-8")
+        if self.body:
+            encoded_response = encoded_response + self.body
+        return encoded_response
 
 
 def resolve_uri(uri):
@@ -55,7 +46,6 @@ def resolve_uri(uri):
     print('File Path: ' + path)
 
     mimetype = mimetypes.guess_type(path)
-    print(mimetype)
 
     f = io.open(path, "rb")
     body = f.read()
@@ -65,23 +55,25 @@ def resolve_uri(uri):
 
 def response_ok(body, content_type):
     """Return Status 200 response with body and headers."""
-    headers = {"Content-Type": content_type}
-    response = Response("200", "OK", body=body, headers=headers)
+    headers = {
+        "Content-Length": len(body),
+        "Content-Type": content_type,
+    }
+    response = Response(200, "OK", body=body, headers=headers)
 
     return response.return_response_string()
 
 
-def response_error(code, reason_phrase, body=None):
+def response_error(code, reason_phrase):
     """Return Error Response."""
-    response = Response(code, reason_phrase, body)
+    response = Response(code, reason_phrase)
     return response.return_response_string()
 
 
 def make_socket():
     """Build a socket for the server, set attributes, and bind address."""
     server = socket.socket(socket.AF_INET, socket.SOCK_STREAM, socket.IPPROTO_TCP)
-    address = ('127.0.0.1', 5000)
-    server.bind(address)
+    server.bind(ADDRESS)
     server.listen(1)
     return server
 
@@ -111,11 +103,11 @@ def parse_request(request):
     headers = request_split[3:]
 
     if method != "GET":
-        raise TypeError("Specified method is not allowed.")
+        raise RequestError(405, "Method Not Allowed")
     elif protocol != "HTTP/1.1":
-        raise ValueError("Specified protocol is not supported.")
+        raise RequestError(505, "HTTP Version Not Supported")
     elif "Host:" not in headers:
-        raise AttributeError("Request does not have proper headers.")
+        raise RequestError(400, "Bad Request")
     else:
         return uri
 
@@ -134,14 +126,10 @@ def server():
                 uri = parse_request(message.decode('utf-8'))
                 resolved_uri = resolve_uri(uri)
                 response_msg = response_ok(resolved_uri[0], resolved_uri[1])
-            except TypeError:
-                response_msg = response_error("405", "Method Not Allowed")
-            except ValueError:
-                response_msg = response_error("505", "HTTP Version Not Supported")
-            except AttributeError:
-                response_msg = response_error("400", "Bad Request")
+            except RequestError as ex:
+                response_msg = response_error(*ex.args)
             except IOError:
-                response_msg = response_error("404", "File Not Found")
+                response_msg = response_error(404, "File Not Found")
             finally:
                 print(u"The requested URI is: " + uri)
                 print(response_msg)
