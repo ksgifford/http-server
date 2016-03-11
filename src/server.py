@@ -1,6 +1,9 @@
 """Module to create a simple http server."""
 # -*- coding: utf-8 -*-
 import socket
+import io
+import os
+import mimetypes
 
 
 class Response(object):
@@ -31,26 +34,46 @@ class Response(object):
 
         try:
             response_list.append(blank_line)
-            response_list.append(self.body)
+            # response_list.append(self.body)
         except AttributeError:
             pass
 
         response_string = "{}" * len(response_list)
 
-        return response_string.format(*response_list)
+        new_response = response_string.format(*response_list)
+        new_response = new_response.encode('utf-8')
+        new_response = new_response + self.body
+        return new_response
 
 
-def response_ok():
+def resolve_uri(uri):
+    homedir = os.getcwd()
+    webroot = 'webroot'
+
+    uri = uri.lstrip('/')
+    path = os.path.join(homedir, webroot, uri)
+    print('File Path: ' + path)
+
+    mimetype = mimetypes.guess_type(path)
+    print(mimetype)
+
+    f = io.open(path, "rb")
+    body = f.read()
+    f.close()
+    return (body, mimetype[0])
+
+
+def response_ok(body, content_type):
     """Return Status 200 response with body and headers."""
-    headers = {"Content-Type": "text/plain"}
-    body = "This is some text -- body text"
+    headers = {"Content-Type": content_type}
     response = Response("200", "OK", body=body, headers=headers)
+
     return response.return_response_string()
 
 
-def response_error(code, reason_phrase):
+def response_error(code, reason_phrase, body=None):
     """Return Error Response."""
-    response = Response(code, reason_phrase)
+    response = Response(code, reason_phrase, body)
     return response.return_response_string()
 
 
@@ -84,6 +107,7 @@ def parse_request(request):
     method = request_split[0]
     uri = request_split[1]
     protocol = request_split[2]
+    print("Protocol: " + protocol)
     headers = request_split[3:]
 
     if method != "GET":
@@ -108,17 +132,20 @@ def server():
             print(message)
             try:
                 uri = parse_request(message.decode('utf-8'))
-                response_msg = response_ok()
+                resolved_uri = resolve_uri(uri)
+                response_msg = response_ok(resolved_uri[0], resolved_uri[1])
             except TypeError:
                 response_msg = response_error("405", "Method Not Allowed")
             except ValueError:
                 response_msg = response_error("505", "HTTP Version Not Supported")
             except AttributeError:
                 response_msg = response_error("400", "Bad Request")
+            except IOError:
+                response_msg = response_error("404", "File Not Found")
             finally:
                 print(u"The requested URI is: " + uri)
-                print(response_msg.encode('utf-8'))
-                conn.sendall(response_msg.encode('utf-8'))
+                print(response_msg)
+                conn.sendall(response_msg)
                 conn.close()
 
     except KeyboardInterrupt:
