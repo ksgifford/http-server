@@ -26,8 +26,8 @@ class Response(object):
     def return_response_string(self):
         """Return this Response Instances's response string."""
         response = "{} {}\r\n".format(self.protocol, self.code)
+        str_headers = ""
         if self.headers:
-            str_headers = ""
             for k, v in self.headers.items():
                 str_headers += "{}: {}\r\n".format(k, v)
 
@@ -44,12 +44,21 @@ def resolve_uri(uri):
     uri = uri.lstrip('/')
     path = os.path.join(homedir, webroot, uri)
     print('File Path: ' + path)
+    body = ""
 
     mimetype = mimetypes.guess_type(path)
-
-    f = io.open(path, "rb")
-    body = f.read()
-    f.close()
+    print (mimetype[0])
+    if not mimetype[0]:
+        for dir_name, sub_dir_list, file_list in os.walk(path):
+            body += 'Directory: {}'.format(dir_name.split('webroot')[-1])
+            for fname in file_list:
+                body += '\r\n\t {} '.format(fname)
+        print(body)
+        body.encode('utf-8')
+    else:
+        f = io.open(path, "rb")
+        body = f.read()
+        f.close()
     return (body, mimetype[0])
 
 
@@ -100,7 +109,7 @@ def parse_request(request):
     uri = request_split[1]
     protocol = request_split[2]
     print("Protocol: " + protocol)
-    headers = request_split[3:]
+    headers = request_split[3]
 
     if method != "GET":
         raise RequestError(405, "Method Not Allowed")
