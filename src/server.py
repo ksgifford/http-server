@@ -36,6 +36,8 @@ class Response(object):
 
         encoded_response = "{}{}\r\n".format(response, str_headers).encode("utf-8")
         if self.body:
+            if type(self.body) is not bytes:
+                self.body = self.body.encode("utf-8")
             encoded_response = encoded_response + self.body
         return encoded_response
 
@@ -68,8 +70,6 @@ def resolve_uri(uri):
             body += "</ul>"
         body += "</body></html>"
         print(body)
-        body.encode("utf-8")
-        print(body.encode("utf-8"))
     else:
         f = io.open(path, "rb")
         body = f.read()
@@ -159,7 +159,7 @@ def server():
                 except IOError:
                     response_msg = response_error(404, "File Not Found")
                 finally:
-                    print(u"The requested URI is: " + uri)
+                    # print(u"The requested URI is: " + uri)
                     print(response_msg)
                     conn.sendall(response_msg)
                     conn.close()
