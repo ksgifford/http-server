@@ -5,11 +5,14 @@ import io
 import os
 import mimetypes
 
-ADDRESS = ("127.0.0.1", 5000)
+ADDRESS = ("0.0.0.0", 5000)
 
 
 class RequestError(BaseException):
+    """Class for creating new exceptions for HTTP requests."""
+
     def __init__(self, code, reason):
+        """Inherit from BaseException class."""
         super(RequestError, self).__init__(code, reason)
 
 
@@ -38,6 +41,7 @@ class Response(object):
 
 
 def resolve_uri(uri):
+    """Resolve path to resource on local file system and get contents."""
     homedir = os.getcwd()
     webroot = "webroot"
 
@@ -51,7 +55,10 @@ def resolve_uri(uri):
     body = "<!DOCTYPE html><html><body>"
 
     mimetype = mimetypes.guess_type(path)[0]
+
     if not mimetype:
+        if not os.path.isdir(path):
+            raise IOError
         mimetype = "text/html"
         for dir_name, sub_dir_list, file_list in os.walk(path):
             body += "<h3>Directory: {}</h3>".format(dir_name.split("webroot")[-1])
@@ -62,6 +69,7 @@ def resolve_uri(uri):
         body += "</body></html>"
         print(body)
         body.encode("utf-8")
+        print(body.encode("utf-8"))
     else:
         f = io.open(path, "rb")
         body = f.read()
@@ -82,7 +90,10 @@ def response_ok(body, content_type):
 
 def response_error(code, reason_phrase):
     """Return Error Response."""
-    response = Response(code, reason_phrase)
+    body = """<!DOCTYPE html><html><body><h2>Uh oh...\n{} {}
+            </h2></body></html""".format(code, reason_phrase).encode("utf-8")
+    header = {"Content-Type": "text/html"}
+    response = Response(code, reason_phrase, body, header)
     return response.return_response_string()
 
 
