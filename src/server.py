@@ -6,6 +6,7 @@ import os
 import mimetypes
 
 ADDRESS = ("0.0.0.0", 5000)
+BUFF_LENGTH = 1024
 
 
 class RequestError(BaseException):
@@ -107,14 +108,13 @@ def make_socket():
 
 def server_read(conn):
     """Read incoming client message and create echo message to client."""
-    buffer_length = 16
     message_complete = False
     message = []
 
     while not message_complete:
-        part = conn.recv(buffer_length)
+        part = conn.recv(BUFF_LENGTH)
         message.append(part)
-        if len(part) < buffer_length:
+        if len(part) < BUFF_LENGTH:
             break
 
     return b"".join(message)
@@ -139,6 +139,13 @@ def parse_request(request):
         return uri
 
 
+def assemble_response(request):
+    uri = parse_request(request.decode("utf-8"))
+    resolved_uri = resolve_uri(uri)
+    response_msg = response_ok(*resolved_uri)
+    return response_msg
+
+
 def server():
     """Master function to initialize server and call component functions."""
     this_server = make_socket()
@@ -146,22 +153,21 @@ def server():
         print("socket open")
         while True:
             conn, addr = this_server.accept()
-            message = server_read(conn)
-            response_msg = "TEST"
-            if message:
-                print(message)
+            request = server_read(conn)
+            if request:
+                print(request)
                 try:
-                    uri = parse_request(message.decode("utf-8"))
-                    resolved_uri = resolve_uri(uri)
-                    response_msg = response_ok(resolved_uri[0], resolved_uri[1])
+                    response_msg = assemble_response(request)
                 except RequestError as ex:
                     response_msg = response_error(*ex.args)
                 except IOError:
                     response_msg = response_error(404, "File Not Found")
                 finally:
-                    # print(u"The requested URI is: " + uri)
-                    print(response_msg)
-                    conn.sendall(response_msg)
+                    try:
+                        print(response_msg)
+                        conn.sendall(response_msg)
+                    except NameError:
+                        pass
                     conn.close()
 
     except KeyboardInterrupt:
