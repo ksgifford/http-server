@@ -110,7 +110,7 @@ def test_server_response_content_ok():
     """Test that client request returns proper content type header."""
     from client import client
     test_response = client(TEST_REQUEST).split("\r\n")
-    assert "Content-Type: text/plain" in test_response[1]
+    assert "Content-Type: text/plain" in test_response[2]
 
 
 def test_server_response_404():
