@@ -146,29 +146,33 @@ def assemble_response(request):
     return response_msg
 
 
+def manage_client(request, conn):
+    try:
+        response_msg = assemble_response(request)
+    except RequestError as ex:
+        response_msg = response_error(*ex.args)
+    except IOError:
+        response_msg = response_error(404, "File Not Found")
+    finally:
+        try:
+            print(response_msg)
+            conn.sendall(response_msg)
+        except NameError:
+            pass
+        conn.close()
+
+
 def server():
     """Master function to initialize server and call component functions."""
     this_server = make_socket()
     try:
-        print("socket open")
+        print("Socket Open")
         while True:
             conn, addr = this_server.accept()
             request = server_read(conn)
             if request:
                 print(request)
-                try:
-                    response_msg = assemble_response(request)
-                except RequestError as ex:
-                    response_msg = response_error(*ex.args)
-                except IOError:
-                    response_msg = response_error(404, "File Not Found")
-                finally:
-                    try:
-                        print(response_msg)
-                        conn.sendall(response_msg)
-                    except NameError:
-                        pass
-                    conn.close()
+                manage_client(request, conn)
 
     except KeyboardInterrupt:
         try:
