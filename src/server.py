@@ -162,13 +162,13 @@ def manage_client(request, conn):
         conn.close()
 
 
-def server():
+def server(socket, address):
     """Master function to initialize server and call component functions."""
-    this_server = make_socket()
+    this_socket = make_socket()
     try:
         print("Socket Open")
         while True:
-            conn, addr = this_server.accept()
+            conn, addr = this_socket.accept()
             request = server_read(conn)
             if request:
                 print(request)
@@ -182,7 +182,7 @@ def server():
 
     finally:
         print("Socket closing")
-        this_server.close()
+        socket.close()
 
 if __name__ == "__main__":
     server()
