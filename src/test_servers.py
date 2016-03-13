@@ -11,6 +11,14 @@ TEST_LST = [
     (u'Über message', u'Über message')
 ]
 
+TEST_REQUEST = """
+    GET /sample.txt HTTP/1.1
+    Host: 0.0.0.0:5000"""
+
+TEST_REQUEST_404 = """
+    GET /bad_file.txt HTTP/1.1
+    Host: 0.0.0.0:5000"""
+
 
 def test_request_protocol():
     """Test that server throws RequestError when protocol is incorrect."""
@@ -67,24 +75,49 @@ def test_parse_request_uri():
 
     assert parse_request(test_str) == "/favicon.ico"
 
+
 def test_response_constructor_proto():
+    """Test that Response class constructor uses proper protocol."""
     from server import Response
     test_resp = Response(200, "OK")
     assert test_resp.protocol == "HTTP/1.1"
 
 
 def test_response_constructor_code():
+    """Test that Response class constructor returns proper status code."""
     from server import Response
     test_resp = Response(200, "OK")
     assert test_resp.code == "200 OK"
 
 
 def test_response_constructor_not():
+    """Test that constructor does not return body/headers w/o input."""
     from server import Response
     test_resp = Response(200, "OK")
     assert not test_resp.body
     assert not test_resp.headers
 
+
+# NOTE: Following server tests require manually starting the server beforehand.
+def test_server_response_code_ok():
+    """Test that client request returns expected server response."""
+    from client import client
+    test_response = client(TEST_REQUEST).split("\r\n")
+    assert "200 OK" in test_response[0]
+
+
+def test_server_response_content_ok():
+    """Test that client request returns proper content type header."""
+    from client import client
+    test_response = client(TEST_REQUEST).split("\r\n")
+    assert "Content-Type: text/plain" in test_response[1]
+
+
+def test_server_response_404():
+    """Test that server returns 404 error if requested file does not exist."""
+    from client import client
+    test_response = client(TEST_REQUEST_404).split("\r\n")
+    assert "404 File Not Found" in test_response[0]
 
 
 #
