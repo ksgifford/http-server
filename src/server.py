@@ -1,11 +1,10 @@
 """Module to create a simple http server."""
 # -*- coding: utf-8 -*-
-import socket
 import io
 import os
 import mimetypes
 
-ADDRESS = ("0.0.0.0", 5000)
+
 BUFF_LENGTH = 1024
 
 
@@ -35,7 +34,8 @@ class Response(object):
             for k, v in self.headers.items():
                 str_headers += "{}: {}\r\n".format(k, v)
 
-        encoded_response = "{}{}\r\n".format(response, str_headers).encode("utf-8")
+        encoded_response = "{}{}\r\n".format(response, str_headers)
+        encoded_response = encoded_response.encode("utf-8")
         if self.body:
             if type(self.body) is not bytes:
                 self.body = self.body.encode("utf-8")
@@ -44,6 +44,7 @@ class Response(object):
 
 
 def build_directory_tree(path):
+    """Build HTML response body for directory listings and return mimetype."""
     body = "<!DOCTYPE html><html><body>"
     mimetype = "text/html"
     for dir_name, sub_dir_list, file_list in os.walk(path):
@@ -97,14 +98,6 @@ def response_error(code, reason_phrase):
     return response.return_response_string()
 
 
-def make_socket():
-    """Build a socket for the server, set attributes, and bind address."""
-    server = socket.socket(socket.AF_INET, socket.SOCK_STREAM, socket.IPPROTO_TCP)
-    server.bind(ADDRESS)
-    server.listen(1)
-    return server
-
-
 def server_read(conn):
     """Read incoming client message and create echo message to client."""
     message_complete = False
@@ -139,6 +132,7 @@ def parse_request(request):
 
 
 def assemble_response(request):
+    """Assemble response message from parsed client request."""
     uri = parse_request(request.decode("utf-8"))
     resolved_uri = resolve_uri(uri)
     response_msg = response_ok(*resolved_uri)
@@ -146,42 +140,31 @@ def assemble_response(request):
 
 
 def manage_client(request, conn):
+    """Handle incoming client requests and response messages."""
     try:
         response_msg = assemble_response(request)
     except RequestError as ex:
         response_msg = response_error(*ex.args)
     except IOError:
         response_msg = response_error(404, "File Not Found")
+    except OSError:
+        response_msg = response_error(404, "File Not Found")
     finally:
         try:
-            print(response_msg)
             conn.sendall(response_msg)
         except NameError:
             pass
-        conn.close()
 
 
-def server():
+def server(conn, address):
     """Master function to initialize server and call component functions."""
-    this_socket = make_socket()
-    try:
-        print("Socket Open")
-        while True:
-            conn, addr = this_socket.accept()
-            request = server_read(conn)
-            if request:
-                print(request)
-                manage_client(request, conn)
+    print("Client Connection Open")
+    while True:
+        request = server_read(conn)
+        if request:
+            print(request)
+            manage_client(request, conn)
 
-    except KeyboardInterrupt:
-        try:
-            conn.close()
-        except NameError:
-            pass
-
-    finally:
-        print("Socket closing")
-        socket.close()
 
 if __name__ == "__main__":
     server()
