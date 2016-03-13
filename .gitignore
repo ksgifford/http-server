@@ -6,6 +6,9 @@ __pycache__/
 # C extensions
 *.so
 
+# Mac OSX specific
+.DS_Store
+
 # Distribution / packaging
 .Python
 env/
@@ -24,7 +27,6 @@ bin/
 include/
 share/
 pip-selfcheck.json
-tox.ini
 *.egg-info/
 .installed.cfg
 *.egg
