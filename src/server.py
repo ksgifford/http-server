@@ -43,34 +43,33 @@ class Response(object):
         return encoded_response
 
 
+def build_directory_tree(path):
+    body = "<!DOCTYPE html><html><body>"
+    mimetype = "text/html"
+    for dir_name, sub_dir_list, file_list in os.walk(path):
+        body += "<h3>Directory: {}</h3>".format(dir_name.split("webroot")[-1])
+        body += "<ul>"
+        for fname in file_list:
+            body += "<li>{} </li>".format(fname)
+        body += "</ul>"
+    body += "</body></html>"
+    return body, mimetype
+
+
 def resolve_uri(uri):
     """Resolve path to resource on local file system and get contents."""
-    homedir = os.getcwd()
+    homedir = os.path.dirname(__file__)
     webroot = "webroot"
 
     uri = uri.lstrip("/")
-    print("URI: " + uri)
-    if not uri:
-        path = os.path.join(homedir, webroot)
-    else:
-        path = os.path.join(homedir, webroot, uri)
-    print("File Path: " + path)
-    body = "<!DOCTYPE html><html><body>"
+    path = os.path.join(homedir, webroot, uri)
 
     mimetype = mimetypes.guess_type(path)[0]
 
     if not mimetype:
         if not os.path.isdir(path):
             raise IOError
-        mimetype = "text/html"
-        for dir_name, sub_dir_list, file_list in os.walk(path):
-            body += "<h3>Directory: {}</h3>".format(dir_name.split("webroot")[-1])
-            body += "<ul>"
-            for fname in file_list:
-                body += "<li>{} </li>".format(fname)
-            body += "</ul>"
-        body += "</body></html>"
-        print(body)
+        body, mimetype = build_directory_tree(path)
     else:
         f = io.open(path, "rb")
         body = f.read()
@@ -162,7 +161,7 @@ def manage_client(request, conn):
         conn.close()
 
 
-def server(socket, address):
+def server():
     """Master function to initialize server and call component functions."""
     this_socket = make_socket()
     try:
